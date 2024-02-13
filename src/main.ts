@@ -33,6 +33,8 @@ async function run(): Promise<void> {
       modules = ignore().add(globs).filter(modules)
     }
 
+    core.debug(`filtered: ${modules}`)
+
     if (modules.length) {
       core.debug(`Found modules:${modules.map((module) => `\n- ${module}`)}`)
     } else {

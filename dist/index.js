@@ -6,6 +6,25 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -17,9 +36,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getAllModules = void 0;
+const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
 const http_status_codes_1 = __nccwpck_require__(2828);
 const utils_1 = __nccwpck_require__(918);
+function filterNonIgnoredFolders(data) {
+    // Extract unique folder names without unnecessary loops
+    // @ts-ignore
+    const uniqueFolders = Array.from(
+    // @ts-ignore
+    new Set(data.map(item => item.path.split("/")[0])));
+    // Filter paths belonging to valid folders
+    return data.filter(item => {
+        // @ts-ignore
+        const folderName = item.path.split("/")[0];
+        // @ts-ignore
+        // @ts-ignore
+        return (!uniqueFolders.includes(folderName) ||
+            !data.some(innerItem => 
+            // @ts-ignore
+            innerItem.path.startsWith(folderName + "/") &&
+                // @ts-ignore
+                innerItem.path.endsWith("/ignore.path")));
+    });
+}
 function getAllModules(token, monitored) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github_1.getOctokit(token);
@@ -30,10 +70,13 @@ function getAllModules(token, monitored) {
             tree_sha: head,
             recursive: 'true',
         });
+        core.debug(`response: ${JSON.stringify(response.data.tree)}`);
+        const filteredArray = filterNonIgnoredFolders(response.data.tree);
+        core.debug(`Arrays: ${JSON.stringify(filteredArray)}`);
         if (response.status !== 200) {
             throw new Error(http_status_codes_1.getReasonPhrase(response.status));
         }
-        return utils_1.getModulePaths(response.data.tree, 'path', monitored);
+        return utils_1.getModulePaths(filteredArray, 'path', monitored);
     });
 }
 exports.getAllModules = getAllModules;
@@ -46,6 +89,25 @@ exports.getAllModules = getAllModules;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -61,6 +123,7 @@ const github_1 = __nccwpck_require__(5438);
 const http_status_codes_1 = __nccwpck_require__(2828);
 const allModules_1 = __nccwpck_require__(1186);
 const utils_1 = __nccwpck_require__(918);
+const core = __importStar(__nccwpck_require__(2186));
 function getChangedModules(token, monitored) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github_1.getOctokit(token);
@@ -79,6 +142,7 @@ function getChangedModules(token, monitored) {
         }
         const changedModules = utils_1.getModulePaths(response.data.files, 'filename', monitored);
         const allModules = yield allModules_1.getAllModules(token, monitored);
+        core.debug(`allModules: ${allModules}`);
         // filter to exclude deleted modules
         return changedModules.filter((module) => allModules.includes(module));
     });
@@ -154,6 +218,7 @@ function run() {
                 const globs = ignored.split('\n').map((item) => item.trim());
                 modules = ignore_1.default().add(globs).filter(modules);
             }
+            core.debug(`filtered: ${modules}`);
             if (modules.length) {
                 core.debug(`Found modules:${modules.map((module) => `\n- ${module}`)}`);
             }

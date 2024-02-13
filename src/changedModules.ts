@@ -2,6 +2,8 @@ import { context, getOctokit } from '@actions/github'
 import { getReasonPhrase } from 'http-status-codes'
 import { getAllModules } from './allModules'
 import { getModulePaths, getSha } from './utils'
+import * as core from '@actions/core'
+
 
 export async function getChangedModules(
   token: string,
@@ -32,6 +34,9 @@ export async function getChangedModules(
     monitored,
   )
   const allModules = await getAllModules(token, monitored)
+
+
+  core.debug(`allModules: ${allModules}`)
 
   // filter to exclude deleted modules
   return changedModules.filter((module) => allModules.includes(module))
