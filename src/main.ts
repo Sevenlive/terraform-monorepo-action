@@ -30,7 +30,8 @@ async function run(): Promise<void> {
 
     if (ignored) {
       const globs = ignored.split('\n').map((item) => item.trim())
-      modules = ignore().add(globs).filter(modules)
+      const nonEmptyModules = modules.filter(module => module !== null && module !== undefined && module !== "");
+      modules = ignore().add(globs).filter(nonEmptyModules)
     }
 
     if (modules.length) {
