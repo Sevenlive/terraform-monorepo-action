@@ -151,9 +151,14 @@ function run() {
                     throw new Error(`Unknown mode: ${mode}`);
             }
             if (ignored) {
-                const globs = ignored.split('\n').map((item) => item.trim());
-                const nonEmptyModules = modules.filter(module => module !== null && module !== undefined && module !== "");
-                modules = ignore_1.default().add(globs).filter(nonEmptyModules);
+                const patterns = ignored
+                    .split('\n')
+                    .map((item) => item.trim().replace(/\/+$/, ''))
+                    .filter((item) => item !== '');
+                if (patterns.length > 0) {
+                    const ig = ignore_1.default().add(patterns);
+                    modules = modules.filter((module) => module !== '' && !ig.ignores(module));
+                }
             }
             if (modules.length) {
                 core.debug(`Found modules:${modules.map((module) => `\n- ${module}`)}`);
@@ -6169,26 +6174,17 @@ const REPLACERS = [
   [
     // (a\ ) -> (a )
     // (a  ) -> (a)
-    // (a ) -> (a)
     // (a \ ) -> (a  )
-    /((?:\\\\)*?)(\\?\s+)$/,
-    (_, m1, m2) => m1 + (
-      m2.indexOf('\\') === 0
-        ? SPACE
-        : EMPTY
-    )
+    /\\?\s+$/,
+    match => match.indexOf('\\') === 0
+      ? SPACE
+      : EMPTY
   ],
 
   // replace (\ ) with ' '
-  // (\ ) -> ' '
-  // (\\ ) -> '\\ '
-  // (\\\ ) -> '\\ '
   [
-    /(\\+?)\s/g,
-    (_, m1) => {
-      const {length} = m1
-      return m1.slice(0, length - length % 2) + SPACE
-    }
+    /\\\s/g,
+    () => SPACE
   ],
 
   // Escape metacharacters
@@ -6416,8 +6412,7 @@ const makeRegex = (pattern, ignoreCase) => {
 
   if (!source) {
     source = REPLACERS.reduce(
-      (prev, [matcher, replacer]) =>
-        prev.replace(matcher, replacer.bind(pattern)),
+      (prev, current) => prev.replace(current[0], current[1].bind(pattern)),
       pattern
     )
     regexCache[pattern] = source
