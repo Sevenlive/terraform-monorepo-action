@@ -29,9 +29,17 @@ async function run(): Promise<void> {
     }
 
     if (ignored) {
-      const globs = ignored.split('\n').map((item) => item.trim())
-      const nonEmptyModules = modules.filter(module => module !== null && module !== undefined && module !== "");
-      modules = ignore().add(globs).filter(nonEmptyModules)
+      const patterns = ignored
+        .split('\n')
+        .map((item) => item.trim())
+        .filter((item) => item !== '')
+
+      if (patterns.length > 0) {
+        const ig = ignore().add(patterns)
+        modules = modules.filter(
+          (module) => module !== '' && !ig.ignores(module),
+        )
+      }
     }
 
     if (modules.length) {
