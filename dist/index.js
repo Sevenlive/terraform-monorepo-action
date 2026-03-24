@@ -153,7 +153,7 @@ function run() {
             if (ignored) {
                 const patterns = ignored
                     .split('\n')
-                    .map((item) => item.trim())
+                    .map((item) => item.trim().replace(/\/+$/, ''))
                     .filter((item) => item !== '');
                 if (patterns.length > 0) {
                     const ig = ignore_1.default().add(patterns);
